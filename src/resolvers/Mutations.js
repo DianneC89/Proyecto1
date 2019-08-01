@@ -40,7 +40,9 @@ const addPhoto = async(root, args) =>{
         const stream = createReadStream();
         console.log('Strema ==>>' , stream);
         const url = await storage({stream})
-        console.log(url)
+        await User.findByIdAndUpdate(args.id, {$set: {img: url.url}})
+        //console.log(url)
+        return url.url;
     }
 }
 
