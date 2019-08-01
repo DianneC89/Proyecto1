@@ -1,40 +1,54 @@
-const  Post = require('../models/Post');
+
+const Post = require('../models/Post');
 const User = require('../models/User');
+const authenticated = require('../utils/authenticated');
+const storage = require('../utils/storage');
 
 const createPost = async (root, args) => {
     let newPost = new Post({
-       title : args.data.title,
+        title: args.data.title,
         body: args.data.body,
-        createdAT: args.data.createdAT,
+        createdAt: args.data.createdAt,
         user: args.data.user
-
-        //name : args.data.name,
-        //email: args.data.email,
-        //password: args.data.password,
-       // ...args.data
     })
     const miPost = await newPost.save();
-    const post =await Post.findOne({_id:miPost._id}).populate('user')
-    //return miPost;
+    const post = await Post.findOne({_id:miPost._id}).populate('user')
     return post;
-}
+};
 
-
-const createUser = async (root, args) => {
-
-    let newUser = new User ({
-       // ...args.data
-       name : args.data.name,
-        email: args.data.email,
-        password: args.data.password
-      
+const createUser = async(root, args) => {
+    let newUser = new User({
+        ...args.data
     })
-
     const user = await newUser.save();
     return user;
 }
 
+const login = async(root, args) => {
+    const token = await authenticated(args)
+        .catch((err) => new Error(err))
+    return {
+        token,
+        message: 'Ok'
+    }
+}
+
+const addPhoto = async(root, args) =>{
+    console.log(args);
+    if(args.photo){
+        const {createReadStream}= await args.photo;
+        const stream = createReadStream();
+        console.log('Strema ==>>' , stream);
+        const url = await storage({stream})
+        console.log(url)
+    }
+}
+
+
+
 module.exports = {
     createPost,
-    createUser
+    createUser,
+    login,
+    addPhoto
 }

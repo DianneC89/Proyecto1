@@ -1,45 +1,46 @@
 
 require('dotenv').config();
-const {GraphQLServer} = require('graphql-yoga');
-const {importSchema} = require('graphql-import');
+const { GraphQLServer } = require('graphql-yoga');
+const { importSchema } = require('graphql-import');
+const { makeExecutableSchema } = require('graphql-tools');
 const typeDefs = importSchema('./src/schema.graphql');
-const mongoose =require('mongoose');
+const { AuthDirective } = require('./resolvers/directive');
+ const verifyToken = require('./utils/verifyToken');
+const mongoose = require('mongoose');
 
-//const mongoUrl = 'mongodb+srv://administrador:administrador@clusterdev-fi9jc.gcp.mongodb.net/test?retryWrites=true&w=majority';
-mongoose.connect(process.env.MONGO_URL, {useNewUrlParser: true}, (err) => {
+mongoose.connect(process.env.MONGO_Url, {useNewUrlParser: true}, (err) => {
     if(!err){
-        console.log('mongo conectado correctamente');
+        console.log('Conectado a Mongo');
     }
-});
+})
 
-
-
-
-const Post = require('./models/Post');
-
-
-const { getAllPosts } = require('./resolvers/Querys');
-const { createPost, createUser } = require('./resolvers/Mutations');
+const { getAllPosts, getPost, getUsers } = require('./resolvers/Querys');
+const { createPost, createUser, login, addPhoto } = require('./resolvers/Mutations');
 
 const resolvers = {
     Query: {
-        
-        getAllPosts
-        //saludo: (root, args) => `Hola ${args.name}`,
-      
-        //despedida: (root, args) => "K"
-      
-    },
-
+     getAllPosts,
+     getPost,
+     getUsers 
+    }, 
     Mutation: {
-        
         createPost,
-        createUser
-
+        createUser,
+        login, 
+        addPhoto 
     }
-  
-    
   }
 
-const server = new GraphQLServer({ typeDefs, resolvers })
-server.start(() => console.log('Server is running on localhost:4000'))
+  const schema = makeExecutableSchema({
+      typeDefs,
+      resolvers,
+      schemaDirectives: {
+          auth: AuthDirective
+      }
+  })
+  
+  const server = new GraphQLServer({ 
+      schema,
+      context: async({request}) => verifyToken(request)
+   })
+  server.start(() => console.log('Server is running on localhost:4000'))
